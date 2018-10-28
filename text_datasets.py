@@ -173,8 +173,8 @@ def get_other_text_dataset(name, vocab=None, shrink=1,
     return train, test, vocab
 
 
-def load_glove(path):
-    arr = numpy.loadtxt(path, dtype='str', comments=None)
+def load_glove(path, max_vocab=100000):
+    arr = numpy.loadtxt(path, dtype='str', comments=None)[:max_vocab, :]
     vocab = {}
     vocab['<eos>'] = 0
     vocab['<unk>'] = 1
