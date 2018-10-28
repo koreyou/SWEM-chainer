@@ -78,7 +78,9 @@ def convert_seq(batch, device=None, with_label=True):
             return batch_dev
 
     if with_label:
+        ys = chainer.dataset.to_device(
+            device, numpy.concatenate([y for _, y in batch]))
         return {'xs': to_device_batch([x for x, _ in batch]),
-                'ys': to_device_batch([y for _, y in batch])}
+                'ys': ys}
     else:
         return to_device_batch([x for x in batch])

@@ -3,6 +3,7 @@ import glob
 import io
 import os
 import shutil
+import sys
 import tarfile
 import tempfile
 
@@ -23,12 +24,15 @@ URL_OTHER_BASE = 'https://raw.githubusercontent.com/harvardnlp/sent-conv-torch/m
 def download_dbpedia():
     path = chainer.dataset.cached_download(URL_DBPEDIA)
     tf = tarfile.open(path, 'r')
+    # tf = (d.decode('utf-8') for d in tf)
     return tf
 
 
 def read_dbpedia(tf, split, shrink=1, char_based=False):
     dataset = []
     f = tf.extractfile('dbpedia_csv/{}.csv'.format(split))
+    if sys.version_info > (3, 0):
+        f = io.TextIOWrapper(f, encoding='utf-8')
     for i, (label, title, text) in enumerate(csv.reader(f)):
         if i % shrink != 0:
             continue
@@ -167,3 +171,23 @@ def get_other_text_dataset(name, vocab=None, shrink=1,
     test = transform_to_array(test, vocab)
 
     return train, test, vocab
+
+
+def load_glove(path):
+    arr = numpy.loadtxt(path, dtype='str', comments=None)
+    vocab = {}
+    vocab['<eos>'] = 0
+    vocab['<unk>'] = 1
+    del_inds = []
+    for i, a in enumerate(arr[:, 0]):
+        a = str(a)
+        if a in vocab:
+            del_inds.append(i)
+        else:
+            vocab[a] = i + 2 - len(del_inds)
+    emb = arr[:, 1:].astype(numpy.float32)
+    emb = numpy.delete(emb, del_inds, axis=0)
+    emb = numpy.vstack(
+        (numpy.random.uniform(-0.01, 0.01, size=(2, emb.shape[1])),
+         emb))
+    return emb, vocab

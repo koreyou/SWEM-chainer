@@ -15,9 +15,10 @@ import text_datasets
 
 def main():
     current_datetime = '{}'.format(datetime.datetime.today())
-    parser = argparse.ArgumentParser(
-        description='Chainer example: Text Classification')
-    parser.add_argument('--batchsize', '-b', type=int, default=64,
+    parser = argparse.ArgumentParser(description='Train SWEM model')
+    # Default hyperparameters as specified in the author's implementation
+    # https://github.com/dinghanshen/SWEM/blob/master/eval_dbpedia_emb.py
+    parser.add_argument('--batchsize', '-b', type=int, default=50,
                         help='Number of images in each mini-batch')
     parser.add_argument('--epoch', '-e', type=int, default=30,
                         help='Number of sweeps over the dataset to train')
@@ -27,35 +28,41 @@ def main():
                         help='Directory to output the result')
     parser.add_argument('--unit', '-u', type=int, default=300,
                         help='Number of units')
-    parser.add_argument('--layer', '-l', type=int, default=1,
-                        help='Number of layers of RNN or MLP following CNN')
-    parser.add_argument('--dropout', '-d', type=float, default=0.4,
+    parser.add_argument('--dropout', '-d', type=float, default=0.2,
                         help='Dropout rate')
-    parser.add_argument('--dataset', '-data', default='imdb.binary',
+    parser.add_argument('--word-emb', type=str, default=None,
+                        help='Pretrained Glove file')
+    parser.add_argument('--window', type=int, default=153,
+                        help='Pooling window size for SWEM')
+    parser.add_argument('--dataset', '-data', default='dbpedia',
                         choices=['dbpedia', 'imdb.binary', 'imdb.fine',
                                  'TREC', 'stsa.binary', 'stsa.fine',
                                  'custrev', 'mpqa', 'rt-polarity', 'subj'],
                         help='Name of dataset.')
-    parser.add_argument('--model', '-model', default='cnn',
-                        choices=['cnn', 'rnn', 'bow'],
-                        help='Name of encoder model type.')
-    parser.add_argument('--char-based', action='store_true')
+    parser.add_argument('--model', '-model', default='concat',
+                        choices=['concat', 'hier'])
 
     args = parser.parse_args()
     print(json.dumps(args.__dict__, indent=2))
 
+    if args.word_emb is not None:
+        initial_emb, vocab = text_datasets.load_glove(args.word_emb)
+        emb_size = initial_emb.shape[1]
+    else:
+        initial_emb = None
+        vocab = None
+        emb_size = args.unit
+
     # Load a dataset
     if args.dataset == 'dbpedia':
-        train, test, vocab = text_datasets.get_dbpedia(
-            char_based=args.char_based)
+        train, test, vocab = text_datasets.get_dbpedia(vocab=vocab)
     elif args.dataset.startswith('imdb.'):
         train, test, vocab = text_datasets.get_imdb(
-            fine_grained=args.dataset.endswith('.fine'),
-            char_based=args.char_based)
+            vocab=vocab, fine_grained=args.dataset.endswith('.fine'))
     elif args.dataset in ['TREC', 'stsa.binary', 'stsa.fine',
                           'custrev', 'mpqa', 'rt-polarity', 'subj']:
         train, test, vocab = text_datasets.get_other_text_dataset(
-            args.dataset, char_based=args.char_based)
+            args.dataset, vocab=vocab)
 
     print('# train data: {}'.format(len(train)))
     print('# test  data: {}'.format(len(test)))
@@ -64,27 +71,28 @@ def main():
     print('# class: {}'.format(n_class))
 
     train_iter = chainer.iterators.SerialIterator(train, args.batchsize)
-    test_iter = chainer.iterators.SerialIterator(test, args.batchsize,
-                                                 repeat=False, shuffle=False)
+    test_iter = chainer.iterators.SerialIterator(
+        test, args.batchsize, repeat=False, shuffle=False)
 
     # Setup a model
-    if args.model == 'rnn':
-        Encoder = nets.RNNEncoder
-    elif args.model == 'cnn':
-        Encoder = nets.CNNEncoder
-    elif args.model == 'bow':
-        Encoder = nets.BOWMLPEncoder
-    encoder = Encoder(n_layers=args.layer, n_vocab=len(vocab),
-                      n_units=args.unit, dropout=args.dropout)
-    model = nets.TextClassifier(encoder, n_class)
+    if args.model == 'hier':
+        Encoder = nets.SWEMhier
+    elif args.model == 'concat':
+        Encoder = nets.SWEMconcat
+    model = Encoder(
+        n_class, n_vocab=len(vocab), emb_size=emb_size,
+        n_units=args.unit, window=args.window, dropout=args.dropout,
+        initial_emb=initial_emb)
+    classifier = chainer.links.Classifier(model, label_key='ys')
+
     if args.gpu >= 0:
         # Make a specified GPU current
         chainer.backends.cuda.get_device_from_id(args.gpu).use()
-        model.to_gpu()  # Copy the model to the GPU
+        classifier.to_gpu()  # Copy the model to the GPU
 
     # Setup an optimizer
     optimizer = chainer.optimizers.Adam()
-    optimizer.setup(model)
+    optimizer.setup(classifier)
     optimizer.add_hook(chainer.optimizer.WeightDecay(1e-4))
 
     # Set up a trainer
@@ -95,7 +103,7 @@ def main():
 
     # Evaluate the model with the test dataset for each epoch
     trainer.extend(extensions.Evaluator(
-        test_iter, model,
+        test_iter, classifier,
         converter=convert_seq, device=args.gpu))
 
     # Take a best snapshot

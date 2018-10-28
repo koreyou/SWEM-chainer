@@ -36,3 +36,9 @@ To apply the saved model to your sentences, feed the sentences through stdin:
 cat sentences_to_be_classifed.txt | python run_text_classifier.py -g 0 --model-setup result/args.json
 ```
 The classification result is given by stdout.
+
+
+# LICENSE
+
+Most of the code is derived from [Chainer](https://github.com/chainer/chainer) examples, thus it should be treated as MIT license.
+The code I added (e.g. nets.py, check diff for the detail) should be treated as [CC0](https://creativecommons.org/share-your-work/public-domain/cc0/).
