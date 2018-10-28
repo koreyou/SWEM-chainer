@@ -89,6 +89,9 @@ def main():
         # Make a specified GPU current
         chainer.backends.cuda.get_device_from_id(args.gpu).use()
         classifier.to_gpu()  # Copy the model to the GPU
+    elif chainer.backends.intel64.is_ideep_available():
+        setattr(chainer.config, 'use_ideep', 'auto')
+        classifier.to_intel64()
 
     # Setup an optimizer
     optimizer = chainer.optimizers.Adam()
