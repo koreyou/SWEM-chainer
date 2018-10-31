@@ -20,6 +20,9 @@ def main():
     # https://github.com/dinghanshen/SWEM/blob/master/eval_dbpedia_emb.py
     parser.add_argument('--batchsize', '-b', type=int, default=50,
                         help='Number of images in each mini-batch')
+    # author's impl was using average cross entropy loss instead of sum
+    parser.add_argument('--lr', type=float, default=4e-6,
+                        help='Learning rate')
     parser.add_argument('--epoch', '-e', type=int, default=30,
                         help='Number of sweeps over the dataset to train')
     parser.add_argument('--gpu', '-g', type=int, default=-1,
@@ -94,7 +97,7 @@ def main():
         classifier.to_intel64()
 
     # Setup an optimizer
-    optimizer = chainer.optimizers.Adam()
+    optimizer = chainer.optimizers.Adam(alpha=args.lr)
     optimizer.setup(classifier)
     optimizer.add_hook(chainer.optimizer.WeightDecay(1e-4))
 
