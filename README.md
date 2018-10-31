@@ -1,12 +1,10 @@
-# Neural Networks for Text Classification
+** WIP: This project is still incomplete. **
 
-This is an example of text classification using typical neural networks. This code can switch choices below:  
-- LSTM
-- CNN + MLP
-- BoW + MLP
-- Character-based variant models of those
+# SWEM: Simple Word-Embedding-Based Models
 
-And also, dataset is switchable among below:  
+This project implements [Shen et al. 2018. Baseline Needs More Love: On Simple Word-Embedding-Based Models and Associated Pooling Mechanisms. ACL.](https://aclanthology.info/papers/P18-1041/p18-1041) in [Chainer](https://chainer.org/).
+
+Dataset is switchable among below:
 - [DBPedia Ontology dataset](https://github.com/zhangxiangxiao/Crepe) (dbpedia): Predict its ontology class from the abstract of an Wikipedia article.
 - [IMDB Movie Review Dataset](https://ai.stanford.edu/~amaas/data/sentiment/) (imdb.binary, imdb.fine): Predict its sentiment from a review about a movie. `.binary`'s classes are positive/negative. `.fine`'s classes are ratings [0-1]/[2-3]/[7-8]/[9-10].
 - [TREC Question Classification](http://cogcomp.cs.illinois.edu/Data/QA/QC/) (TREC): Predict the type of its answer from a factoid question.
@@ -18,12 +16,11 @@ And also, dataset is switchable among below:
 
 Some of datasets are downloaded from @harvardnlp's [repository](https://github.com/harvardnlp/sent-conv-torch/tree/master/data). Thank you.
 
-
 # How to Run
 
 To train a model:  
 ```
-python train_text_classifier.py -g 0 --dataset stsa.binary --model cnn
+python train_text_classifier.py --word-emb glove.6B.100d.txt
 ```
 The output directory `result` contains:  
 - `best_model.npz`: a model snapshot, which won the best accuracy for validation data during training
