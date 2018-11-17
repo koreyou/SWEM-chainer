@@ -35,8 +35,8 @@ def main():
                         help='Dropout rate')
     parser.add_argument('--word-emb', type=str, default=None,
                         help='Pretrained Glove file')
-    parser.add_argument('--window', type=int, default=153,
-                        help='Pooling window size for SWEM')
+    parser.add_argument('--window', type=int, default=5,
+                        help='Pooling window size for SWEM-hier')
     parser.add_argument('--dataset', '-data', default='dbpedia',
                         choices=['dbpedia', 'imdb.binary', 'imdb.fine',
                                  'TREC', 'stsa.binary', 'stsa.fine',
