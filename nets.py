@@ -51,7 +51,7 @@ class SWEMBase(chainer.Chain):
         dropout (float): The dropout ratio.
     """
 
-    def __init__(self, n_class, n_vocab, emb_size, n_units, window,
+    def __init__(self, n_class, n_vocab, emb_size, n_units,
                  dropout=0.2, initial_emb=None):
         super(SWEMBase, self).__init__()
         if initial_emb is None:
@@ -62,7 +62,6 @@ class SWEMBase(chainer.Chain):
             self.l1 = L.Linear(None, n_units)
             self.l2 = L.Linear(n_units, n_class)
         self.dropout = dropout
-        self.window = window
 
     def forward(self, xs):
         return self.predict(xs)
@@ -86,10 +85,27 @@ class SWEMBase(chainer.Chain):
 
 
 class SWEMhier(SWEMBase):
+    """Hierarchical variation of SWEM (SWEM-hier)
+
+    Args:
+        n_class (int): The number of classes to be predicted.
+        n_vocab (int): The size of vocabulary.
+        emb_size (int): The number of units word embedding.
+        n_units (int): The number of units of MLP.
+        dropout (float): The dropout ratio.
+    """
+
+    def __init__(self, n_class, n_vocab, emb_size, n_units,
+                 dropout=0.2, initial_emb=None, window=5):
+        super(SWEMhier, self).__init__(
+            n_class, n_vocab, emb_size, n_units, dropout=dropout,
+            initial_emb=initial_emb)
+        self.window = window
 
     def encode(self, ex_block, x_len):
         if ex_block.shape[2] > self.window:
-            ex_block = F.max_pooling_2d(ex_block, [self.window, 1], stride=1)
+            # no need for pooling when length is smaller than the window
+            ex_block = F.average_pooling_2d(ex_block, [self.window, 1], stride=1)
         return F.max(F.squeeze(ex_block, -1), axis=2)
 
 
@@ -97,8 +113,5 @@ class SWEMconcat(SWEMBase):
 
     def encode(self, ex_block, x_len):
         emb_ave = F.sum(F.squeeze(ex_block, -1), axis=2) / self.xp.array(x_len)[:, None]
-        if ex_block.shape[2] > self.window:
-            # no need for pooling when length is smaller than the window
-            ex_block = F.max_pooling_2d(ex_block, [self.window, 1], stride=1)
-        emb_hier = F.max(F.squeeze(ex_block, -1), axis=2)
-        return F.concat((emb_hier, emb_ave), axis=1)
+        emb_max = F.max(F.squeeze(ex_block, -1), axis=2)
+        return F.concat((emb_max, emb_ave), axis=1)

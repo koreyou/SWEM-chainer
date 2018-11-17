@@ -79,13 +79,16 @@ def main():
 
     # Setup a model
     if args.model == 'hier':
-        Encoder = nets.SWEMhier
+        model = nets.SWEMhier(
+            n_class, n_vocab=len(vocab), emb_size=emb_size,
+            n_units=args.unit, dropout=args.dropout,
+            initial_emb=initial_emb, window=args.window)
     elif args.model == 'concat':
-        Encoder = nets.SWEMconcat
-    model = Encoder(
-        n_class, n_vocab=len(vocab), emb_size=emb_size,
-        n_units=args.unit, window=args.window, dropout=args.dropout,
-        initial_emb=initial_emb)
+        model = nets.SWEMconcat(
+            n_class, n_vocab=len(vocab), emb_size=emb_size,
+            n_units=args.unit, dropout=args.dropout,
+            initial_emb=initial_emb)
+
     classifier = chainer.links.Classifier(model, label_key='ys')
 
     if args.gpu >= 0:
