@@ -8,8 +8,8 @@ import tarfile
 import tempfile
 
 import numpy
-
 import chainer
+import pandas as pd
 
 from nlp_utils import make_vocab
 from nlp_utils import normalize_text
@@ -174,18 +174,18 @@ def get_other_text_dataset(name, vocab=None, shrink=1,
 
 
 def load_glove(path, max_vocab=100000):
-    arr = numpy.loadtxt(path, dtype='str', comments=None)[:max_vocab, :]
+    arr = pd.read_csv(path, sep=' ', header=None, nrows=max_vocab)
     vocab = {}
     vocab['<eos>'] = 0
     vocab['<unk>'] = 1
     del_inds = []
-    for i, a in enumerate(arr[:, 0]):
-        a = str(a)
+    for i in range(len(arr)):
+        a = arr.iloc[i, 0]
         if a in vocab:
             del_inds.append(i)
         else:
             vocab[a] = i + 2 - len(del_inds)
-    emb = arr[:, 1:].astype(numpy.float32)
+    emb = arr.iloc[:, 1:].values.astype(numpy.float32)
     emb = numpy.delete(emb, del_inds, axis=0)
     emb = numpy.vstack(
         (numpy.random.uniform(-0.01, 0.01, size=(2, emb.shape[1])),
