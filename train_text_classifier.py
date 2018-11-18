@@ -20,8 +20,7 @@ def main():
     # https://github.com/dinghanshen/SWEM/blob/master/eval_dbpedia_emb.py
     parser.add_argument('--batchsize', '-b', type=int, default=50,
                         help='Number of images in each mini-batch')
-    # author's impl was using average cross entropy loss instead of sum
-    parser.add_argument('--lr', type=float, default=4e-6,
+    parser.add_argument('--lr', type=float, default=2e-4,
                         help='Learning rate')
     parser.add_argument('--epoch', '-e', type=int, default=30,
                         help='Number of sweeps over the dataset to train')
