@@ -23,7 +23,7 @@ def main():
                         help='Number of images in each mini-batch')
     parser.add_argument('--lr', type=float, default=2e-4,
                         help='Learning rate')
-    parser.add_argument('--epoch', '-e', type=int, default=30,
+    parser.add_argument('--epoch', '-e', type=int, default=1000,
                         help='Number of sweeps over the dataset to train')
     parser.add_argument('--gpu', '-g', type=int, default=-1,
                         help='GPU ID (negative value indicates CPU)')
@@ -109,7 +109,10 @@ def main():
     updater = training.updaters.StandardUpdater(
         train_iter, optimizer,
         converter=convert_seq, device=args.gpu)
-    trainer = training.Trainer(updater, (args.epoch, 'epoch'), out=args.out)
+    trigger =  training.triggers.EarlyStoppingTrigger(
+        monitor='validation/main/accuracy', patients=3,
+        max_trigger=(args.epoch, 'epoch'))
+    trainer = training.Trainer(updater, trigger, out=args.out)
 
     # Evaluate the model with the test dataset for each epoch
     trainer.extend(extensions.Evaluator(
