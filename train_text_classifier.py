@@ -101,7 +101,6 @@ def main():
     # Setup an optimizer
     optimizer = chainer.optimizers.Adam(alpha=args.lr)
     optimizer.setup(classifier)
-    optimizer.add_hook(chainer.optimizer.WeightDecay(1e-4))
 
     # Set up a trainer
     updater = training.updaters.StandardUpdater(
