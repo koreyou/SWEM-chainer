@@ -49,6 +49,7 @@ def main():
     print(json.dumps(args.__dict__, indent=2))
 
     if args.word_emb is not None:
+        print('load word embedding')
         initial_emb, vocab = text_datasets.load_glove(args.word_emb)
         emb_size = initial_emb.shape[1]
     else:
