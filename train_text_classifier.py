@@ -70,6 +70,7 @@ def main():
         train, int(len(train) * 0.9), seed=123)
 
     print('# train data: {}'.format(len(train)))
+    print('# dev data: {}'.format(len(dev)))
     print('# test  data: {}'.format(len(test)))
     print('# vocab: {}'.format(len(vocab)))
     n_class = len(set([int(d[1]) for d in train]))
