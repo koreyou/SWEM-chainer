@@ -140,12 +140,11 @@ def main():
         json.dump(vocab, f)
     model_path = os.path.join(current, args.out, 'best_model.npz')
     model_setup = args.__dict__
-    model_setup['vocab_path'] = vocab_path
-    model_setup['model_path'] = model_path
     model_setup['n_class'] = n_class
     model_setup['datetime'] = current_datetime
+    model_setup['emb_size'] = emb_size
     with open(os.path.join(args.out, 'args.json'), 'w') as f:
-        json.dump(args.__dict__, f)
+        json.dump(args.__dict__, f, indent=2)
 
     # Run the training
     trainer.run()

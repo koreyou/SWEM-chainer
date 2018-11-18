@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import argparse
 import json
+import os
 import sys
 
 import chainer
@@ -11,27 +12,34 @@ import nlp_utils
 
 def setup_model(args):
     sys.stderr.write(json.dumps(args.__dict__, indent=2) + '\n')
-    setup = json.load(open(args.model_setup))
+    setup = json.load(
+        open(os.path.join(args.model_setup, 'args.json')))
     sys.stderr.write(json.dumps(setup, indent=2) + '\n')
 
-    vocab = json.load(open(setup['vocab_path']))
+    vocab = json.load(
+        open(os.path.join(args.model_setup, 'vocab.json')))
     n_class = setup['n_class']
 
     # Setup a model
-    if setup['model'] == 'rnn':
-        Encoder = nets.RNNEncoder
-    elif setup['model'] == 'cnn':
-        Encoder = nets.CNNEncoder
-    elif setup['model'] == 'bow':
-        Encoder = nets.BOWMLPEncoder
-    encoder = Encoder(n_layers=setup['layer'], n_vocab=len(vocab),
-                      n_units=setup['unit'], dropout=setup['dropout'])
-    model = nets.TextClassifier(encoder, n_class)
-    chainer.serializers.load_npz(setup['model_path'], model)
+    if setup['model'] == 'hier':
+        model = nets.SWEMhier(
+            n_class, n_vocab=len(vocab), emb_size=setup['emb_size'],
+            n_units=setup['unit'], dropout=setup['dropout'],
+            window=args.window)
+    elif setup['model'] == 'concat':
+        model = nets.SWEMconcat(
+            n_class, n_vocab=len(vocab), emb_size=setup['emb_size'],
+            n_units=setup['unit'], dropout=setup['dropout'])
+
+    chainer.serializers.load_npz(
+        os.path.join(args.model_setup, 'best_model.npz'), model)
     if args.gpu >= 0:
         # Make a specified GPU current
         chainer.backends.cuda.get_device_from_id(args.gpu).use()
         model.to_gpu()  # Copy the model to the GPU
+    elif chainer.backends.intel64.is_ideep_available():
+        setattr(chainer.config, 'use_ideep', 'auto')
+        model.to_intel64()
 
     return model, vocab, setup
 
@@ -91,7 +99,7 @@ if __name__ == '__main__':
         description='Chainer example: Text Classification')
     parser.add_argument('--gpu', '-g', type=int, default=-1,
                         help='GPU ID (negative value indicates CPU)')
-    parser.add_argument('--model-setup', required=True,
+    parser.add_argument('--model-setup', default='result/',
                         help='Model setup dictionary.')
     args = parser.parse_args()
 
