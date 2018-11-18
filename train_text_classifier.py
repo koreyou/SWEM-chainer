@@ -11,6 +11,7 @@ from chainer.training import extensions
 import nets
 from nlp_utils import convert_seq
 import text_datasets
+from prediction import evaluate
 
 
 def main():
@@ -65,6 +66,8 @@ def main():
                           'custrev', 'mpqa', 'rt-polarity', 'subj']:
         train, test, vocab = text_datasets.get_other_text_dataset(
             args.dataset, vocab=vocab)
+    train, dev = chainer.datasets.split_dataset_random(
+        train, int(len(train) * 0.9), seed=123)
 
     print('# train data: {}'.format(len(train)))
     print('# test  data: {}'.format(len(test)))
@@ -73,8 +76,8 @@ def main():
     print('# class: {}'.format(n_class))
 
     train_iter = chainer.iterators.SerialIterator(train, args.batchsize)
-    test_iter = chainer.iterators.SerialIterator(
-        test, args.batchsize, repeat=False, shuffle=False)
+    dev_iter = chainer.iterators.SerialIterator(
+        dev, args.batchsize, repeat=False, shuffle=False)
 
     # Setup a model
     if args.model == 'hier':
@@ -110,7 +113,7 @@ def main():
 
     # Evaluate the model with the test dataset for each epoch
     trainer.extend(extensions.Evaluator(
-        test_iter, classifier,
+        dev_iter, classifier,
         converter=convert_seq, device=args.gpu))
 
     # Take a best snapshot
@@ -143,6 +146,10 @@ def main():
 
     # Run the training
     trainer.run()
+    chainer.serializers.load_npz(
+        os.path.join(args.out, 'best_model.npz'), model)
+    evaluate(model, test, converter=convert_seq, device=args.gpu,
+             batchsize=args.batchsize, label_key='ys')
 
 
 if __name__ == '__main__':
