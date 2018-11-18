@@ -84,3 +84,8 @@ def convert_seq(batch, device=None, with_label=True):
                 'ys': ys}
     else:
         return to_device_batch([x for x in batch])
+
+
+def calc_unk_ratio(dataset, vocab):
+    xs = numpy.concatenate([d[0] for d in dataset])
+    return numpy.average(xs == vocab['<unk>'])

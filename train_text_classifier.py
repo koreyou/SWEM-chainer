@@ -9,7 +9,7 @@ from chainer import training
 from chainer.training import extensions
 
 import nets
-from nlp_utils import convert_seq
+from nlp_utils import convert_seq, calc_unk_ratio
 import text_datasets
 from prediction import evaluate
 
@@ -73,6 +73,7 @@ def main():
     print('# dev data: {}'.format(len(dev)))
     print('# test  data: {}'.format(len(test)))
     print('# vocab: {}'.format(len(vocab)))
+    print('# Unk ratio: {}'.format(calc_unk_ratio(train, vocab)))
     n_class = len(set([int(d[1]) for d in train]))
     print('# class: {}'.format(n_class))
 
