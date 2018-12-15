@@ -48,18 +48,10 @@ def main():
     args = parser.parse_args()
     print(json.dumps(args.__dict__, indent=2))
 
-    if args.word_emb is not None:
-        print('load word embedding')
-        initial_emb, vocab = text_datasets.load_glove(args.word_emb)
-        emb_size = initial_emb.shape[1]
-    else:
-        initial_emb = None
-        vocab = None
-        emb_size = args.unit
-
     # Load a dataset
     if args.dataset == 'dbpedia':
-        train, test, vocab = text_datasets.get_dbpedia(vocab=vocab)
+        train, test, vocab, initial_emb = text_datasets.get_dbpedia(
+            word_emb=args.word_emb)
     elif args.dataset.startswith('imdb.'):
         train, test, vocab = text_datasets.get_imdb(
             vocab=vocab, fine_grained=args.dataset.endswith('.fine'))
@@ -67,6 +59,11 @@ def main():
                           'custrev', 'mpqa', 'rt-polarity', 'subj']:
         train, test, vocab = text_datasets.get_other_text_dataset(
             args.dataset, vocab=vocab)
+
+    if initial_emb is None:
+        emb_size = args.unit
+    else:
+        emb_size = initial_emb.shape[1]
     train, dev = chainer.datasets.split_dataset_random(
         train, int(len(train) * 0.9), seed=123)
 

@@ -7,15 +7,8 @@ import chainer
 from chainer.backends import cuda
 
 
-def split_text(text, char_based=False):
-    if char_based:
-        return list(text)
-    else:
-        return text.split()
-
-
 def normalize_text(text):
-    return text.strip().lower()
+    return text.strip()
 
 
 def make_vocab(dataset, max_vocab_size=20000, min_freq=2):

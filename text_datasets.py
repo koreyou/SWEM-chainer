@@ -1,4 +1,5 @@
 import csv
+from contextlib import contextmanager
 import glob
 import io
 import os
@@ -6,14 +7,15 @@ import shutil
 import sys
 import tarfile
 import tempfile
+from zipfile import ZipFile
 
 import numpy
 import chainer
 import pandas as pd
+from stanfordcorenlp import StanfordCoreNLP
 
 from nlp_utils import make_vocab
 from nlp_utils import normalize_text
-from nlp_utils import split_text
 from nlp_utils import transform_to_array
 
 URL_DBPEDIA = 'https://github.com/le-scientifique/torchDatasets/raw/master/dbpedia_csv.tar.gz'  # NOQA
@@ -28,7 +30,7 @@ def download_dbpedia():
     return tf
 
 
-def read_dbpedia(tf, split, shrink=1, char_based=False):
+def read_dbpedia_impl(tokenize, tf, split, shrink):
     dataset = []
     f = tf.extractfile('dbpedia_csv/{}.csv'.format(split))
     if sys.version_info > (3, 0):
@@ -37,26 +39,39 @@ def read_dbpedia(tf, split, shrink=1, char_based=False):
         if i % shrink != 0:
             continue
         label = int(label) - 1  # Index begins from 1
-        tokens = split_text(normalize_text(text), char_based)
+        tokens = tokenize(normalize_text(text))
         dataset.append((tokens, label))
     return dataset
 
 
-def get_dbpedia(vocab=None, shrink=1, char_based=False):
+def read_dbpedia(tf, split, shrink=1, char_based=False):
+    if char_based:
+        tokenize = list
+        return read_dbpedia_impl(tokenize, tf, split, shrink)
+    else:
+        with StanfordCoreNLP(r'/opt/stanford-corenlp-full-2018-10-05/') as nlp:
+            tokenize = nlp.word_tokenize
+            return read_dbpedia_impl(tokenize, tf, split, shrink)
+
+
+def get_dbpedia(shrink=1, char_based=False, word_emb=None):
     tf = download_dbpedia()
 
     print('read dbpedia')
     train = read_dbpedia(tf, 'train', shrink=shrink, char_based=char_based)
     test = read_dbpedia(tf, 'test', shrink=shrink, char_based=char_based)
 
-    if vocab is None:
-        print('constract vocabulary based on frequency')
-        vocab = make_vocab(train)
+    print('constract vocabulary based on frequency')
+    vocab = make_vocab(train + test)
+
+    if word_emb is not None:
+        print('load word embedding')
+        emb, vocab = load_glove_vocab(word_emb, vocab=vocab.keys())
 
     train = transform_to_array(train, vocab)
     test = transform_to_array(test, vocab)
 
-    return train, test, vocab
+    return train, test, vocab, emb
 
 
 def download_imdb():
@@ -173,7 +188,39 @@ def get_other_text_dataset(name, vocab=None, shrink=1,
     return train, test, vocab
 
 
-def load_glove(path, max_vocab=100000):
+def load_glove_vocab(path, vocab, max_vocab=None):
+    vocab = set(vocab)
+    if path.endswith('.zip'):
+        @contextmanager
+        def load(path):
+            zf = ZipFile(path)
+            fin = zf.open(zf.namelist()[0], 'r')
+            yield io.TextIOWrapper(fin)
+            fin.close()
+            zf.close()
+    else:
+        load = open
+    new_vocab = {}
+    new_vocab['<eos>'] = 0
+    new_vocab['<unk>'] = 1
+    emb = []
+    with load(path) as fin:
+        for line in fin:
+            vals = line.strip().split(' ')
+            word = vals[0]
+            if word in vocab:
+                emb.append(list(map(numpy.float32, vals[1:])))
+                new_vocab[word] = len(new_vocab)
+            if max_vocab is not None and len(new_vocab) == max_vocab:
+                break
+    special_tokens = numpy.random.uniform(-0.01, 0.01, size=(2, len(emb[0]))).tolist()
+    emb = special_tokens + emb
+    return numpy.array(emb, dtype=numpy.float32), new_vocab
+
+
+def load_glove(path, max_vocab=None, vocab=None):
+    if vocab is not None:
+        return load_glove_vocab(path, vocab, max_vocab=max_vocab)
     arr = pd.read_csv(path, sep=' ', header=None, nrows=max_vocab)
     vocab = {}
     vocab['<eos>'] = 0
