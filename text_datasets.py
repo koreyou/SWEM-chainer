@@ -12,11 +12,11 @@ from zipfile import ZipFile
 import numpy
 import chainer
 import pandas as pd
-from stanfordcorenlp import StanfordCoreNLP
 
 from nlp_utils import make_vocab
 from nlp_utils import normalize_text
 from nlp_utils import transform_to_array
+from nlp_utils import load_stanfordcorenlp
 
 URL_DBPEDIA = 'https://github.com/le-scientifique/torchDatasets/raw/master/dbpedia_csv.tar.gz'  # NOQA
 URL_IMDB = 'https://ai.stanford.edu/~amaas/data/sentiment/aclImdb_v1.tar.gz'
@@ -44,22 +44,29 @@ def read_dbpedia_impl(tokenize, tf, split, shrink):
     return dataset
 
 
-def read_dbpedia(tf, split, shrink=1, char_based=False):
+def read_dbpedia(tf, split, shrink=1, char_based=False, stanfordcorenlp=None):
     if char_based:
         tokenize = list
         return read_dbpedia_impl(tokenize, tf, split, shrink)
+    elif stanfordcorenlp is None:
+        tokenize = lambda text: text.split()
+        return read_dbpedia_impl(tokenize, tf, split, shrink)
     else:
-        with StanfordCoreNLP(r'/opt/stanford-corenlp-full-2018-10-05/') as nlp:
+        with load_stanfordcorenlp(stanfordcorenlp) as nlp:
             tokenize = nlp.word_tokenize
             return read_dbpedia_impl(tokenize, tf, split, shrink)
 
 
-def get_dbpedia(shrink=1, char_based=False, word_emb=None):
+def get_dbpedia(shrink=1, char_based=False, word_emb=None, stanfordcorenlp=None):
     tf = download_dbpedia()
 
     print('read dbpedia')
-    train = read_dbpedia(tf, 'train', shrink=shrink, char_based=char_based)
-    test = read_dbpedia(tf, 'test', shrink=shrink, char_based=char_based)
+    train = read_dbpedia(
+        tf, 'train', shrink=shrink, char_based=char_based,
+        stanfordcorenlp=stanfordcorenlp)
+    test = read_dbpedia(
+        tf, 'test', shrink=shrink, char_based=char_based,
+        stanfordcorenlp=stanfordcorenlp)
 
     print('constract vocabulary based on frequency')
     vocab = make_vocab(train + test)

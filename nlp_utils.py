@@ -1,10 +1,12 @@
 import collections
 import io
+import re
 
 import numpy
 
 import chainer
 from chainer.backends import cuda
+from stanfordcorenlp import StanfordCoreNLP
 
 
 def normalize_text(text):
@@ -82,3 +84,13 @@ def convert_seq(batch, device=None, with_label=True):
 def calc_unk_ratio(dataset, vocab):
     xs = numpy.concatenate([d[0] for d in dataset])
     return numpy.average(xs == vocab['<unk>'])
+
+
+def load_stanfordcorenlp(uri):
+    port = None
+    if uri.startswith('http://'):
+        match = re.search(r':[0-9]+', uri)
+        if match is not None:
+            port = int(match.group(0)[1:])
+            uri = uri.replace(match.group(0), '')
+    return StanfordCoreNLP(uri, port=port)

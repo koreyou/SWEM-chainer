@@ -35,6 +35,10 @@ def main():
                         help='Dropout rate')
     parser.add_argument('--word-emb', type=str, default=None,
                         help='Pretrained Glove file')
+    parser.add_argument('--stanfordcorenlp', type=str, default=None,
+                        help='StanfordCoreNLP URL or base directory'
+                        'e.g. http://localhost:9000 or '
+                        './stanford-corenlp-full-2018-10-05/')
     parser.add_argument('--window', type=int, default=5,
                         help='Pooling window size for SWEM-hier')
     parser.add_argument('--dataset', '-data', default='dbpedia',
@@ -51,7 +55,7 @@ def main():
     # Load a dataset
     if args.dataset == 'dbpedia':
         train, test, vocab, initial_emb = text_datasets.get_dbpedia(
-            word_emb=args.word_emb)
+            word_emb=args.word_emb, stanfordcorenlp=args.stanfordcorenlp)
     elif args.dataset.startswith('imdb.'):
         train, test, vocab = text_datasets.get_imdb(
             vocab=vocab, fine_grained=args.dataset.endswith('.fine'))
