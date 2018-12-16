@@ -215,14 +215,14 @@ def load_glove_vocab(path, vocab, max_vocab=None):
         for line in fin:
             vals = line.strip().split(' ')
             word = vals[0]
-            if word in vocab:
+            if word in vocab and word not in new_vocab:
                 emb.append(list(map(numpy.float32, vals[1:])))
                 new_vocab[word] = len(new_vocab)
             if max_vocab is not None and len(new_vocab) == max_vocab:
                 break
     special_tokens = numpy.random.uniform(-0.01, 0.01, size=(2, len(emb[0]))).tolist()
-    emb = special_tokens + emb
-    return numpy.array(emb, dtype=numpy.float32), new_vocab
+    emb = numpy.array(special_tokens + emb, dtype=numpy.float32)
+    return emb, new_vocab
 
 
 def load_glove(path, max_vocab=None, vocab=None):
