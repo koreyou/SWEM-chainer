@@ -6,7 +6,6 @@ import numpy
 
 import chainer
 from chainer.backends import cuda
-from stanfordcorenlp import StanfordCoreNLP
 
 
 def normalize_text(text):
@@ -87,6 +86,7 @@ def calc_unk_ratio(dataset, vocab):
 
 
 def load_stanfordcorenlp(uri):
+    from stanfordcorenlp import StanfordCoreNLP
     port = None
     if uri.startswith('http://'):
         match = re.search(r':[0-9]+', uri)
