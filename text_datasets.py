@@ -69,7 +69,7 @@ def get_dbpedia(shrink=1, char_based=False, word_emb=None, stanfordcorenlp=None)
         stanfordcorenlp=stanfordcorenlp)
 
     print('constract vocabulary based on frequency')
-    vocab = make_vocab(train + test)
+    vocab = make_vocab(train + test, max_vocab_size=500000)
 
     if word_emb is not None:
         print('load word embedding')
