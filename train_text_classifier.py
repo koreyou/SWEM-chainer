@@ -117,7 +117,7 @@ def main():
     updater = training.updaters.StandardUpdater(
         train_iter, optimizer,
         converter=convert_seq, device=args.gpu)
-    trigger =  training.triggers.EarlyStoppingTrigger(
+    trigger = training.triggers.EarlyStoppingTrigger(
         monitor='validation/main/accuracy', patients=3,
         max_trigger=(args.epoch, 'epoch'))
     trainer = training.Trainer(updater, trigger, out=args.out)
@@ -147,7 +147,6 @@ def main():
     vocab_path = os.path.join(current, args.out, 'vocab.json')
     with open(vocab_path, 'w') as f:
         json.dump(vocab, f)
-    model_path = os.path.join(current, args.out, 'best_model.npz')
     model_setup = args.__dict__
     model_setup['n_class'] = n_class
     model_setup['datetime'] = current_datetime
