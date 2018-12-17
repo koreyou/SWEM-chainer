@@ -83,7 +83,7 @@ python train_text_classifier.py \
 | SWEM-hier        | 98.59    |
 
 
-[^2]: [Shen et al. 2018. Baseline Needs More Love: On Simple Word-Embedding-Based Models and Associated Pooling Mechanisms. ACL.](https://aclanthology.info/papers/P18-1041/p18-1041)
+[^2]: https://aclanthology.info/papers/P18-1041/p18-1041
 
 Bottom two is my implementation and others are extracted from the paper[^2].
 You can see that my implementation (roughly) reproduces the results from the original paper.
