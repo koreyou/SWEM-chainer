@@ -25,7 +25,7 @@ def setup_model(args):
         model = nets.SWEMhier(
             n_class, n_vocab=len(vocab), emb_size=setup['emb_size'],
             n_units=setup['unit'], dropout=setup['dropout'],
-            window=args.window)
+            window=setup['window'])
     elif setup['model'] == 'concat':
         model = nets.SWEMconcat(
             n_class, n_vocab=len(vocab), emb_size=setup['emb_size'],
