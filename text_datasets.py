@@ -44,21 +44,19 @@ def read_dbpedia_impl(tokenize, tf, split, shrink):
     return dataset
 
 
-def read_dbpedia(tf, split, shrink=1, char_based=False, stanfordcorenlp=None):
-    with get_tokenizer(char_based, stanfordcorenlp) as tokenize:
+def read_dbpedia(tf, split, shrink=1, stanfordcorenlp=None):
+    with get_tokenizer(stanfordcorenlp) as tokenize:
         return read_dbpedia_impl(tokenize, tf, split, shrink)
 
 
-def get_dbpedia(shrink=1, char_based=False, word_emb=None, stanfordcorenlp=None):
+def get_dbpedia(shrink=1, word_emb=None, stanfordcorenlp=None):
     tf = download_dbpedia()
 
     print('read dbpedia')
     train = read_dbpedia(
-        tf, 'train', shrink=shrink, char_based=char_based,
-        stanfordcorenlp=stanfordcorenlp)
+        tf, 'train', shrink=shrink, stanfordcorenlp=stanfordcorenlp)
     test = read_dbpedia(
-        tf, 'test', shrink=shrink, char_based=char_based,
-        stanfordcorenlp=stanfordcorenlp)
+        tf, 'test', shrink=shrink, stanfordcorenlp=stanfordcorenlp)
 
     print('constract vocabulary based on frequency')
     vocab = make_vocab(train + test, max_vocab_size=500000)
@@ -83,7 +81,7 @@ def download_imdb():
 
 
 def read_imdb(path, split,
-              shrink=1, fine_grained=False, char_based=False):
+              shrink=1, fine_grained=False):
     fg_label_dict = {'1': 0, '2': 0, '3': 1, '4': 1,
                      '7': 2, '8': 2, '9': 3, '10': 3}
 
@@ -95,7 +93,7 @@ def read_imdb(path, split,
                 continue
             with io.open(f_path, encoding='utf-8', errors='ignore') as f:
                 text = f.read().strip()
-            tokens = split_text(normalize_text(text), char_based)
+            tokens = split_text(normalize_text(text))
             if fine_grained:
                 # extract from f_path. e.g. /pos/200_8.txt -> 8
                 label = fg_label_dict[f_path.split('_')[-1][:-4]]
@@ -109,17 +107,14 @@ def read_imdb(path, split,
     return pos_dataset + neg_dataset
 
 
-def get_imdb(vocab=None, shrink=1, fine_grained=False,
-             char_based=False):
+def get_imdb(vocab=None, shrink=1, fine_grained=False):
     tmp_path = download_imdb()
 
     print('read imdb')
     train = read_imdb(tmp_path, 'train',
-                      shrink=shrink, fine_grained=fine_grained,
-                      char_based=char_based)
+                      shrink=shrink, fine_grained=fine_grained)
     test = read_imdb(tmp_path, 'test',
-                     shrink=shrink, fine_grained=fine_grained,
-                     char_based=char_based)
+                     shrink=shrink, fine_grained=fine_grained)
 
     shutil.rmtree(tmp_path)
 
@@ -148,7 +143,7 @@ def download_other_dataset(name):
     return file_paths
 
 
-def read_other_dataset(path, shrink=1, char_based=False):
+def read_other_dataset(path, shrink=1):
     dataset = []
     with io.open(path, encoding='utf-8', errors='ignore') as f:
         for i, l in enumerate(f):
@@ -156,21 +151,18 @@ def read_other_dataset(path, shrink=1, char_based=False):
                 continue
             label, text = l.strip().split(None, 1)
             label = int(label)
-            tokens = split_text(normalize_text(text), char_based)
+            tokens = split_text(normalize_text(text))
             dataset.append((tokens, label))
     return dataset
 
 
-def get_other_text_dataset(name, vocab=None, shrink=1,
-                           char_based=False, seed=777):
+def get_other_text_dataset(name, vocab=None, shrink=1, seed=777):
     assert(name in ['TREC', 'stsa.binary', 'stsa.fine',
                     'custrev', 'mpqa', 'rt-polarity', 'subj'])
     datasets = download_other_dataset(name)
-    train = read_other_dataset(
-        datasets[0], shrink=shrink, char_based=char_based)
+    train = read_other_dataset(datasets[0], shrink=shrink)
     if len(datasets) == 2:
-        test = read_other_dataset(
-            datasets[1], shrink=shrink, char_based=char_based)
+        test = read_other_dataset(datasets[1], shrink=shrink)
     else:
         numpy.random.seed(seed)
         alldata = numpy.random.permutation(train)

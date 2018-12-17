@@ -98,11 +98,8 @@ def load_stanfordcorenlp(uri):
 
 
 @contextmanager
-def get_tokenizer(char_based, stanfordcorenlp):
-    if char_based:
-        tokenize = list
-        yield tokenize
-    elif stanfordcorenlp is None:
+def get_tokenizer(stanfordcorenlp):
+    if stanfordcorenlp is None:
         tokenize = lambda text: text.split()
         yield tokenize
     else:

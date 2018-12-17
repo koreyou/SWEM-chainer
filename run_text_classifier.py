@@ -104,7 +104,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     model, vocab, setup = setup_model(args)
-    with nlp_utils.get_tokenizer(setup['char_based'], setup['stanfordcorenlp']) as tokenize:
+    with nlp_utils.get_tokenizer(setup['stanfordcorenlp']) as tokenize:
         if args.gpu >= 0:
             run_batch(args.gpu, tokenize)
         else:
