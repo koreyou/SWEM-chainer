@@ -57,12 +57,16 @@ def main():
         train, test, vocab, initial_emb = text_datasets.get_dbpedia(
             word_emb=args.word_emb, stanfordcorenlp=args.stanfordcorenlp)
     elif args.dataset.startswith('imdb.'):
-        train, test, vocab = text_datasets.get_imdb(
-            vocab=vocab, fine_grained=args.dataset.endswith('.fine'))
+        train, test, vocab, initial_emb = text_datasets.get_imdb(
+            word_emb=args.word_emb,
+            stanfordcorenlp=args.stanfordcorenlp,
+            fine_grained=args.dataset.endswith('.fine'))
     elif args.dataset in ['TREC', 'stsa.binary', 'stsa.fine',
                           'custrev', 'mpqa', 'rt-polarity', 'subj']:
-        train, test, vocab = text_datasets.get_other_text_dataset(
-            args.dataset, vocab=vocab)
+        train, test, vocab, initial_emb = \
+            text_datasets.get_other_text_dataset(
+                args.dataset, word_emb=args.word_emb,
+                stanfordcorenlp=args.stanfordcorenlp)
 
     if initial_emb is None:
         emb_size = args.unit

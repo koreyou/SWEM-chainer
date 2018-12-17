@@ -30,7 +30,7 @@ def download_dbpedia():
     return tf
 
 
-def read_dbpedia_impl(tokenize, tf, split, shrink):
+def read_dbpedia(tokenize, tf, split, shrink=1):
     dataset = []
     f = tf.extractfile('dbpedia_csv/{}.csv'.format(split))
     if sys.version_info > (3, 0):
@@ -44,19 +44,13 @@ def read_dbpedia_impl(tokenize, tf, split, shrink):
     return dataset
 
 
-def read_dbpedia(tf, split, shrink=1, stanfordcorenlp=None):
-    with get_tokenizer(stanfordcorenlp) as tokenize:
-        return read_dbpedia_impl(tokenize, tf, split, shrink)
-
-
 def get_dbpedia(shrink=1, word_emb=None, stanfordcorenlp=None):
     tf = download_dbpedia()
 
     print('read dbpedia')
-    train = read_dbpedia(
-        tf, 'train', shrink=shrink, stanfordcorenlp=stanfordcorenlp)
-    test = read_dbpedia(
-        tf, 'test', shrink=shrink, stanfordcorenlp=stanfordcorenlp)
+    with get_tokenizer(stanfordcorenlp) as tokenize:
+        train = read_dbpedia(tokenize, tf, 'train', shrink=shrink)
+        test = read_dbpedia(tokenize, tf, 'test', shrink=shrink)
 
     print('constract vocabulary based on frequency')
     vocab = make_vocab(train + test, max_vocab_size=500000)
@@ -64,6 +58,8 @@ def get_dbpedia(shrink=1, word_emb=None, stanfordcorenlp=None):
     if word_emb is not None:
         print('load word embedding')
         emb, vocab = load_glove_vocab(word_emb, vocab=vocab.keys())
+    else:
+        emb = None
 
     train = transform_to_array(train, vocab)
     test = transform_to_array(test, vocab)
@@ -80,8 +76,7 @@ def download_imdb():
     return path
 
 
-def read_imdb(path, split,
-              shrink=1, fine_grained=False):
+def read_imdb(tokenize, path, split, shrink=1, fine_grained=False):
     fg_label_dict = {'1': 0, '2': 0, '3': 1, '4': 1,
                      '7': 2, '8': 2, '9': 3, '10': 3}
 
@@ -93,7 +88,7 @@ def read_imdb(path, split,
                 continue
             with io.open(f_path, encoding='utf-8', errors='ignore') as f:
                 text = f.read().strip()
-            tokens = split_text(normalize_text(text))
+            tokens = tokenize(normalize_text(text))
             if fine_grained:
                 # extract from f_path. e.g. /pos/200_8.txt -> 8
                 label = fg_label_dict[f_path.split('_')[-1][:-4]]
@@ -107,25 +102,32 @@ def read_imdb(path, split,
     return pos_dataset + neg_dataset
 
 
-def get_imdb(vocab=None, shrink=1, fine_grained=False):
+def get_imdb(shrink=1, word_emb=None, stanfordcorenlp=None,
+             fine_grained=False):
     tmp_path = download_imdb()
 
     print('read imdb')
-    train = read_imdb(tmp_path, 'train',
-                      shrink=shrink, fine_grained=fine_grained)
-    test = read_imdb(tmp_path, 'test',
-                     shrink=shrink, fine_grained=fine_grained)
+    with get_tokenizer(stanfordcorenlp) as tokenize:
+        train = read_imdb(tokenize, tmp_path, 'train',
+                          shrink=shrink, fine_grained=fine_grained)
+        test = read_imdb(tokenize, tmp_path, 'test',
+                         shrink=shrink, fine_grained=fine_grained)
 
     shutil.rmtree(tmp_path)
 
-    if vocab is None:
-        print('constract vocabulary based on frequency')
-        vocab = make_vocab(train)
+    print('constract vocabulary based on frequency')
+    vocab = make_vocab(train)
+
+    if word_emb is not None:
+        print('load word embedding')
+        emb, vocab = load_glove_vocab(word_emb, vocab=vocab.keys())
+    else:
+        emb = None
 
     train = transform_to_array(train, vocab)
     test = transform_to_array(test, vocab)
 
-    return train, test, vocab
+    return train, test, vocab, emb
 
 
 def download_other_dataset(name):
@@ -143,7 +145,7 @@ def download_other_dataset(name):
     return file_paths
 
 
-def read_other_dataset(path, shrink=1):
+def read_other_dataset(tokenize, path, shrink=1):
     dataset = []
     with io.open(path, encoding='utf-8', errors='ignore') as f:
         for i, l in enumerate(f):
@@ -151,32 +153,41 @@ def read_other_dataset(path, shrink=1):
                 continue
             label, text = l.strip().split(None, 1)
             label = int(label)
-            tokens = split_text(normalize_text(text))
+            tokens = tokenize(normalize_text(text))
             dataset.append((tokens, label))
     return dataset
 
 
-def get_other_text_dataset(name, vocab=None, shrink=1, seed=777):
+def get_other_text_dataset(name, shrink=1, word_emb=None,
+                           stanfordcorenlp=None, seed=777):
     assert(name in ['TREC', 'stsa.binary', 'stsa.fine',
                     'custrev', 'mpqa', 'rt-polarity', 'subj'])
     datasets = download_other_dataset(name)
-    train = read_other_dataset(datasets[0], shrink=shrink)
-    if len(datasets) == 2:
-        test = read_other_dataset(datasets[1], shrink=shrink)
-    else:
-        numpy.random.seed(seed)
-        alldata = numpy.random.permutation(train)
-        train = alldata[:-len(alldata) // 10]
-        test = alldata[-len(alldata) // 10:]
+    with get_tokenizer(stanfordcorenlp) as tokenize:
+        train = read_other_dataset(
+            tokenize, datasets[0], shrink=shrink)
+        if len(datasets) == 2:
+            test = read_other_dataset(
+                tokenize, datasets[1], shrink=shrink)
+        else:
+            numpy.random.seed(seed)
+            alldata = numpy.random.permutation(train)
+            train = alldata[:-len(alldata) // 10]
+            test = alldata[-len(alldata) // 10:]
 
-    if vocab is None:
-        print('constract vocabulary based on frequency')
-        vocab = make_vocab(train)
+    print('constract vocabulary based on frequency')
+    vocab = make_vocab(train)
+
+    if word_emb is not None:
+        print('load word embedding')
+        emb, vocab = load_glove_vocab(word_emb, vocab=vocab.keys())
+    else:
+        emb = None
 
     train = transform_to_array(train, vocab)
     test = transform_to_array(test, vocab)
 
-    return train, test, vocab
+    return train, test, vocab, emb
 
 
 def load_glove_vocab(path, vocab, max_vocab=None):
