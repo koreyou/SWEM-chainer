@@ -1,4 +1,5 @@
 import collections
+from contextlib import contextmanager
 import io
 import re
 
@@ -94,3 +95,17 @@ def load_stanfordcorenlp(uri):
             port = int(match.group(0)[1:])
             uri = uri.replace(match.group(0), '')
     return StanfordCoreNLP(uri, port=port)
+
+
+@contextmanager
+def get_tokenizer(char_based, stanfordcorenlp):
+    if char_based:
+        tokenize = list
+        yield tokenize
+    elif stanfordcorenlp is None:
+        tokenize = lambda text: text.split()
+        yield tokenize
+    else:
+        with load_stanfordcorenlp(stanfordcorenlp) as nlp:
+            tokenize = nlp.word_tokenize
+            yield tokenize

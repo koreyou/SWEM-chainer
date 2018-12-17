@@ -16,7 +16,7 @@ import pandas as pd
 from nlp_utils import make_vocab
 from nlp_utils import normalize_text
 from nlp_utils import transform_to_array
-from nlp_utils import load_stanfordcorenlp
+from nlp_utils import get_tokenizer
 
 URL_DBPEDIA = 'https://github.com/le-scientifique/torchDatasets/raw/master/dbpedia_csv.tar.gz'  # NOQA
 URL_IMDB = 'https://ai.stanford.edu/~amaas/data/sentiment/aclImdb_v1.tar.gz'
@@ -45,16 +45,8 @@ def read_dbpedia_impl(tokenize, tf, split, shrink):
 
 
 def read_dbpedia(tf, split, shrink=1, char_based=False, stanfordcorenlp=None):
-    if char_based:
-        tokenize = list
+    with get_tokenizer(char_based, stanfordcorenlp) as tokenize:
         return read_dbpedia_impl(tokenize, tf, split, shrink)
-    elif stanfordcorenlp is None:
-        tokenize = lambda text: text.split()
-        return read_dbpedia_impl(tokenize, tf, split, shrink)
-    else:
-        with load_stanfordcorenlp(stanfordcorenlp) as nlp:
-            tokenize = nlp.word_tokenize
-            return read_dbpedia_impl(tokenize, tf, split, shrink)
 
 
 def get_dbpedia(shrink=1, char_based=False, word_emb=None, stanfordcorenlp=None):

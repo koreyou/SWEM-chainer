@@ -44,7 +44,7 @@ def setup_model(args):
     return model, vocab, setup
 
 
-def run_online(gpu):
+def run_online(gpu, tokenize):
     # predict labels online
     for l in sys.stdin:
         l = l.strip()
@@ -52,7 +52,7 @@ def run_online(gpu):
             print('# blank line')
             continue
         text = nlp_utils.normalize_text(l)
-        words = nlp_utils.split_text(text, char_based=setup['char_based'])
+        words = tokenize(text)
         xs = nlp_utils.transform_to_array([words], vocab, with_label=False)
         xs = nlp_utils.convert_seq(xs, device=gpu, with_label=False)
         with chainer.using_config('train', False), chainer.no_backprop_mode():
@@ -62,7 +62,7 @@ def run_online(gpu):
         print('{}\t{:.4f}\t{}'.format(answer, score, ' '.join(words)))
 
 
-def run_batch(gpu, batchsize=64):
+def run_batch(gpu, tokenize,  batchsize=64):
     # predict labels by batch
 
     def predict_batch(words_batch):
@@ -85,7 +85,7 @@ def run_batch(gpu, batchsize=64):
             print('# blank line')
             continue
         text = nlp_utils.normalize_text(l)
-        words = nlp_utils.split_text(text, char_based=setup['char_based'])
+        words = tokenize(text)
         batch.append(words)
         if len(batch) >= batchsize:
             predict_batch(batch)
@@ -104,7 +104,8 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     model, vocab, setup = setup_model(args)
-    if args.gpu >= 0:
-        run_batch(args.gpu)
-    else:
-        run_online(args.gpu)
+    with nlp_utils.get_tokenizer(setup['char_based'], setup['stanfordcorenlp']) as tokenize:
+        if args.gpu >= 0:
+            run_batch(args.gpu, tokenize)
+        else:
+            run_online(args.gpu, tokenize)
