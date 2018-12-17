@@ -1,5 +1,3 @@
-** WIP: This project is still incomplete. **
-
 # SWEM: Simple Word-Embedding-Based Models
 
 This project implements [Shen et al. 2018. Baseline Needs More Love: On Simple Word-Embedding-Based Models and Associated Pooling Mechanisms. ACL.](https://aclanthology.info/papers/P18-1041/p18-1041) in [Chainer](https://chainer.org/).
