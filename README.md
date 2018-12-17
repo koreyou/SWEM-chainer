@@ -56,6 +56,7 @@ See `python train_text_classifier.py -h` for full options.
 I ran the model on DBpedia Ontology classification task (with git commit 3596301d8861a7d0191df2c20eb5e96e998f2382).
 The hyperparameters follows the author's implementation[^1].
 I used 300d GloVe vectors pretrained on Common Crawl (840B tokens, 2.2M vocab, cased) from https://nlp.stanford.edu/projects/glove/ .
+See [notebook](./experiment.ipynb) for the full experiment on Google Colaboratory.
 
 [^1]: https://github.com/dinghanshen/SWEM
 
